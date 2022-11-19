@@ -8,7 +8,7 @@ import xbmcgui
 
 DEFAULTS = dict(
     autoplay='true',
-    bitrate='320',
+    bitrate='160',
     device='librespot',
     discovery='true',
     name='Librespot@{}',

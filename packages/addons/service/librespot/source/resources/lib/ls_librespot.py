@@ -20,7 +20,8 @@ LIBRESPOT = 'librespot' \
             ' --device-type TV' \
             ' --disable-audio-cache' \
             ' --name {name}' \
-            ' --notify-kodi'
+            ' --notify-kodi' \
+            ' --verbose'
 LIBRESPOT_AUTOPLAY = ' --autoplay'
 LIBRESPOT_AUTHENTICATE = ' --disable-discovery' \
                          ' --password {password}' \
