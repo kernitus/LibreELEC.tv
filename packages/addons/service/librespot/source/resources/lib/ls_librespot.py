@@ -126,10 +126,15 @@ class Librespot(xbmc.Player):
             with self.librespot.stdout:
                 for line in self.librespot.stdout:
                     words = line.split()
+                    if len(words) < 1:
+                        continue
                     if words[0] == '@Playing':
                         self.on_event_playing(words[1], words[2])
                     elif words[0] == '@Stopped':
                         self.on_event_stopped()
+                    elif 'ERROR' in line:
+                        log(line.rstrip())
+                        self.on_event_panic()
                     elif words[0] == 'stack':
                         self.on_event_panic()
                     else:
