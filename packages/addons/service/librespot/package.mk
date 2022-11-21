@@ -3,14 +3,14 @@
 # Copyright (C) 2017-present Team LibreELEC (https://libreelec.tv)
 
 PKG_NAME="librespot"
-PKG_VERSION="0.3.1"
+PKG_VERSION="2c20669"
 PKG_SHA256="d360eaf61ad4216ee2c4a4d583d61c8ec7367b5efbe512011d049f73e4f24952"
-PKG_REV="129"
+PKG_REV="130"
 PKG_ARCH="any"
 PKG_LICENSE="MIT"
 PKG_SITE="https://github.com/librespot-org/librespot/"
-PKG_URL="https://github.com/librespot-org/librespot/archive/v${PKG_VERSION}.tar.gz"
-PKG_DEPENDS_TARGET="toolchain alsa-lib avahi pulseaudio rust"
+PKG_URL="https://github.com/librespot-org/librespot/archive/${PKG_VERSION}.tar.gz"
+PKG_DEPENDS_TARGET="toolchain avahi pulseaudio rust"
 PKG_SECTION="service"
 PKG_SHORTDESC="Librespot: play Spotify through Kodi using a Spotify app as a remote"
 PKG_LONGDESC="Librespot (${PKG_VERSION_DATE}) lets you play Spotify through Kodi using a Spotify app as a remote."
@@ -20,7 +20,7 @@ PKG_IS_ADDON="yes"
 PKG_ADDON_NAME="Librespot"
 PKG_ADDON_TYPE="xbmc.service"
 PKG_ADDON_REQUIRES="script.module.requests:0.0.0"
-PKG_MAINTAINER="Anton Voyl (awiouy)"
+PKG_MAINTAINER="kernitus"
 
 make_target() {
   . $(get_build_dir rust)/cargo/env
@@ -28,7 +28,7 @@ make_target() {
     ${CARGO_Z_TARGET_APPLIES_TO_HOST} \
     --release \
     --no-default-features \
-    --features "alsa-backend pulseaudio-backend with-dns-sd"
+    --features "pulseaudio-backend with-dns-sd"
   ${STRIP} ${PKG_BUILD}/.${TARGET_NAME}/*/release/librespot
 }
 
