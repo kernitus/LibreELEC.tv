@@ -3,15 +3,15 @@ import subprocess
 import threading
 import xbmc
 import xbmcgui
+import os
 
-from ls_addon import ADDON_ENVT as ADDON_ENVT
-from ls_addon import ADDON_HOME as ADDON_HOME
+from ls_addon import ADDON_ENVT, ADDON_HOME, ADDON_PATH
 from ls_addon import get_settings as get_settings
 from ls_addon import log as log
 from ls_pulseaudio import Pulseaudio as Pulseaudio
-from ls_spotify import SPOTIFY as SPOTIFY
+from ls_spotify import update_listitem
 
-
+PIPE_PATH = "/tmp/librespot"
 LIBRESPOT = 'librespot' \
             ' --backend pulseaudio' \
             ' --bitrate {bitrate}' \
@@ -20,8 +20,7 @@ LIBRESPOT = 'librespot' \
             ' --device-type TV' \
             ' --disable-audio-cache' \
             ' --name {name}' \
-            ' --notify-kodi' \
-            ' --verbose'
+            ' --onevent=' + ADDON_PATH + "resources/lib/ls_on_event.py"
 LIBRESPOT_AUTOPLAY = ' --autoplay'
 LIBRESPOT_AUTHENTICATE = ' --disable-discovery' \
                          ' --password {password}' \
@@ -74,7 +73,7 @@ class Librespot(xbmc.Player):
 
     def on_event_playing(self, type, id):
         log('event playing')
-        SPOTIFY.update_listitem(self.listitem, type, id, self.country)
+        update_listitem(self.listitem, type, id, self.country)
         if not self.isPlaying():
             log('starting librespot playback')
             self.pulseaudio.suspend_sink(0)
@@ -125,34 +124,39 @@ class Librespot(xbmc.Player):
             log('librespot started')
             with self.librespot.stdout:
                 for line in self.librespot.stdout:
-                    words = line.split()
-                    if len(words) < 1:
-                        continue
-                    if words[0] == '@Playing':
-                        self.on_event_playing(words[1], words[2])
-                    elif words[0] == '@Stopped':
-                        self.on_event_stopped()
-                    elif 'ERROR' in line:
-                        log(line.rstrip())
-                        self.on_event_panic()
-                    elif words[0] == 'stack':
-                        self.on_event_panic()
-                    else:
-                        log(line.rstrip())
-                        if 'Country:' in line:
-                            self.country = words[-1].strip('"')
-                            log('country={}'.format(self.country))
-            self.pulseaudio.suspend_sink(1)
-            self.stop()
-            self.librespot.wait()
-            log('librespot stopped')
-        self.librespot = None
-        log('librespot thread stopped')
+                    log(line.strip())
+            #with self.librespot.stdout:
+            #    for line in self.librespot.stdout:
+            #        words = line.split()
+            #        if len(words) < 1:
+            #            continue
+            #        if words[0] == '@Playing':
+            #            self.on_event_playing(words[1], words[2])
+            #        elif words[0] == '@Stopped':
+            #            self.on_event_stopped()
+            #        elif 'ERROR' in line:
+            #            log(line.rstrip())
+            #            self.on_event_panic()
+            #        elif words[0] == 'stack':
+            #            self.on_event_panic()
+            #        else:
+            #            log(line.rstrip())
+            #            if 'Country:' in line:
+            #                self.country = words[-1].strip('"')
+            #                log('country={}'.format(self.country))
+            #self.pulseaudio.suspend_sink(1)
+            #self.stop()
+            #self.librespot.wait()
+            #log('librespot stopped')
+        #self.librespot = None
+        #log('librespot thread stopped')
 
     def start_librespot(self):
         if self.librespot is None:
             self.thread = threading.Thread(target=self.run_librespot)
+            self.pipe_listener = threading.Thread(target=self.pipe_listener)
             self.thread.start()
+            self.pipe_listener.start()
 
     def stop(self):
         if self.is_playing_librespot and not self.is_aborted:
@@ -166,3 +170,21 @@ class Librespot(xbmc.Player):
             self.librespot.terminate()
             if not restart:
                 self.thread.join()
+                self.pipe_listener.join()
+
+    def pipe_listener(self):
+        log('Pipe listener started')
+        try:
+            os.mkfifo(PIPE_PATH)
+            log(f'Created pipe')
+        except OSError as e:
+            log(f'File already exists')
+
+        while self.restart and not self.is_dead:
+            with open(PIPE_PATH) as fifo:
+                while self.restart and not self.is_dead:
+                    data = fifo.read()
+                    if len(data) == 0:
+                        break
+
+                    log(f'PIPE data: {data}') # TODO handle events with appropriate listeners
